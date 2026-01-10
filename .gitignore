@@ -17,9 +17,14 @@ ENV/
 *.swo
 
 # Personal/Sensitive Data - DO NOT UPLOAD THESE!
+# Block all CSV files EXCEPT sample_emails.csv
 *.csv
+!sample_emails.csv
+
+# Specific personal files
 test_emails.csv
 emails.csv
+my_emails.csv
 config.ini
 credentials.json
 *.log
@@ -31,4 +36,3 @@ desktop.ini
 
 # Testing
 *.test.csv
-my_emails.csv
