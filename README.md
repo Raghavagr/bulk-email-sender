@@ -58,7 +58,7 @@ You should see something like `Python 3.13.9` or higher.
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/bulk-email-sender.git
+git clone https://github.com/Raghavagr/bulk-email-sender.git
 cd bulk-email-sender
 ```
 
