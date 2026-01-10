@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Personal/Sensitive Data - DO NOT UPLOAD THESE!
+*.csv
+test_emails.csv
+emails.csv
+config.ini
+credentials.json
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+*.test.csv
+my_emails.csv
