@@ -11,11 +11,13 @@ A powerful yet simple Python script to send personalized emails to multiple reci
 - ✅ **Simple & Easy to Use** - Console-based interface with step-by-step prompts
 - ✅ **Secure Authentication** - Uses Gmail App Passwords (no plain text password storage)
 - ✅ **CSV Support** - Load email lists from CSV files easily
+- ✅ **Attachment Support** - Send PDF, DOCX, images, and more (up to 5 files, 25MB total)
 - ✅ **Rate Limiting** - Built-in delays to avoid spam detection
 - ✅ **Progress Tracking** - Real-time updates on email sending progress
 - ✅ **Error Handling** - Detailed error messages and failed email tracking
 - ✅ **Multi-line Messages** - Support for formatted email bodies
 - ✅ **Sender Personalization** - Add custom sender name
+- ✅ **Smart Validation** - Validates files, checks sizes, prevents errors
 - ✅ **No Dependencies** - Uses only Python standard library
 
 ## 📋 Table of Contents
@@ -58,7 +60,7 @@ You should see something like `Python 3.13.9` or higher.
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/Raghavagr/bulk-email-sender.git
+git clone https://github.com/yourusername/bulk-email-sender.git
 cd bulk-email-sender
 ```
 
@@ -152,11 +154,16 @@ The script will guide you through:
    - Enter email subject
    - Type your message (type `END` on a new line when finished)
 
-4. **Configure Sending**
+4. **Add Attachments (Optional)**
+   - Add up to 5 files (25MB total limit)
+   - Enter file paths separated by commas
+   - Or press Enter to skip attachments
+
+5. **Configure Sending**
    - Set delay between emails (default: 2 seconds)
    - Review and confirm
 
-5. **Send Emails**
+6. **Send Emails**
    - Watch real-time progress
    - View summary report at the end
 
@@ -195,69 +202,116 @@ recipient3@example.com
 
 Here's a complete example walkthrough:
 
-### Scenario: Sending Event Invitation
+### Scenario: Sending Job Application with Resume
 
-**1. Create `attendees.csv`:**
+**1. Prepare your resume:**
+Place `John_Doe_Resume.pdf` in the same folder as the script.
+
+**2. Create `hr_contacts.csv`:**
 ```csv
 email
-john@example.com
-jane@company.com
-mike@business.org
+hr@techcorp.com
+recruiter@startup.io
+hiring@company.com
 ```
 
-**2. Run the script:**
+**3. Run the script:**
 ```bash
 python email_sender.py
 ```
 
-**3. Enter credentials:**
+**4. Enter credentials:**
 ```
-Enter your Gmail address: your.email@gmail.com
+Enter your Gmail address: john.doe@gmail.com
 Enter App Password: [your-16-char-password]
 ```
 
-**4. Load CSV:**
+**5. Load CSV:**
 ```
-Enter CSV file path: attendees.csv
+Enter CSV file path: hr_contacts.csv
 ```
 
-**5. Compose email:**
+**6. Compose email:**
 ```
-Enter your name: Sarah Johnson
-Enter email subject: Invitation: Tech Meetup 2026
+Enter your name: John Doe
+Enter email subject: Application for Software Developer Position
 
 Enter email body:
-Hello,
+Dear Hiring Manager,
 
-You're invited to our exclusive Tech Meetup on January 20, 2026!
+I am writing to express my interest in the Software Developer position 
+at your company. I have 3 years of experience in Python development and 
+would love to contribute to your team.
 
-📅 Date: January 20, 2026
-⏰ Time: 6:00 PM - 9:00 PM
-📍 Location: Tech Hub, Downtown
+Please find my resume attached for your review.
 
-RSVP by replying to this email.
-
-Looking forward to seeing you there!
+I look forward to hearing from you.
 
 Best regards,
-Sarah Johnson
+John Doe
+Phone: (555) 123-4567
 END
 ```
 
-**6. Review and send:**
+**7. Add attachments:**
 ```
-Start sending? yes
+Enter attachment file path(s): John_Doe_Resume.pdf
+
+📎 Validating attachments...
+   ✅ John_Doe_Resume.pdf (245.67KB)
+
+✅ All attachments valid! Total size: 0.24MB
 ```
 
-**7. Results:**
+**8. Review and send:**
 ```
-✅ [1/3] Sent to: john@example.com
-✅ [2/3] Sent to: jane@company.com
-✅ [3/3] Sent to: mike@business.org
+📊 READY TO SEND:
+   👤 From: John Doe
+   📧 To: 3 recipients
+   📝 Subject: Application for Software Developer Position
+   📎 Attachments: 1 file(s)
+      - John_Doe_Resume.pdf
+   ⏱️  Delay: 2 seconds between emails
+
+🚀 Start sending? yes
+```
+
+**9. Results:**
+```
+📎 Attachments to include: 1 file(s)
+   - John_Doe_Resume.pdf
+
+✅ [1/3] Sent to: hr@techcorp.com (with 1 attachment(s))
+✅ [2/3] Sent to: recruiter@startup.io (with 1 attachment(s))
+✅ [3/3] Sent to: hiring@company.com (with 1 attachment(s))
 
 📊 SUMMARY
 ✅ Successfully sent: 3/3
 ❌ Failed: 0/3
+📎 Attachments included: 1 file(s)
+```
+
+### More Attachment Examples
+
+**Multiple attachments:**
+```
+Enter attachment file path(s): resume.pdf, cover_letter.docx, portfolio.pdf
+```
+
+**Full file paths:**
+```
+Enter attachment file path(s): C:\Users\John\Documents\resume.pdf, C:\Users\John\Desktop\certificate.pdf
+```
+
+**Mixed (filename and full path):**
+```
+Enter attachment file path(s): resume.pdf, C:\Documents\cover_letter.docx
+```
+
+**No attachments (press Enter):**
+```
+Enter attachment file path(s): 
+📧 No attachments - sending text-only email
 ```
 
 ## 🐛 Common Issues
@@ -329,6 +383,33 @@ Start sending? yes
 - ✅ Restart Command Prompt after installation
 - ✅ Verify installation: `git --version`
 
+### Issue 6: Attachment Too Large
+
+**Symptoms:**
+```
+❌ File too large: resume.pdf (30.50MB)
+💡 Gmail limit: 25MB per file
+```
+
+**Solutions:**
+- ✅ Compress your PDF (use online PDF compressor)
+- ✅ Reduce image quality in documents
+- ✅ Split into multiple smaller files
+- ✅ Use Google Drive link instead for very large files
+
+### Issue 7: Attachment File Not Found
+
+**Symptoms:**
+```
+❌ File not found: resume.pdf
+```
+
+**Solutions:**
+- ✅ Check filename spelling and extension
+- ✅ Use full path: `C:\Users\YourName\Documents\resume.pdf`
+- ✅ Place file in same folder as script
+- ✅ Remove quotes if you copied path
+
 ## ⚡ Best Practices
 
 ### Email Content
@@ -338,6 +419,7 @@ Start sending? yes
 - ✅ **Be clear** - State your purpose early
 - ✅ **Include contact info** - Make it easy to reply
 - ✅ **Proofread** - Test with your own email first
+- ✅ **Optimize attachments** - Compress large files, use clear filenames
 
 ### Sending Strategy
 
@@ -351,8 +433,10 @@ Start sending? yes
 
 - ✅ **Never share App Password** - Treat it like your regular password
 - ✅ **Don't upload CSV to GitHub** - `.gitignore` already prevents this
+- ✅ **Don't upload personal documents** - `.gitignore` blocks common file types
 - ✅ **Revoke unused App Passwords** - Clean up periodically
 - ✅ **Keep your list private** - Don't share recipient emails
+- ✅ **Scan attachments** - Make sure files are virus-free before sending
 
 ### Legal Compliance
 
@@ -396,7 +480,7 @@ If Gmail suspects spam:
 Want to contribute? Here are some ideas:
 
 - [ ] HTML email templates
-- [ ] Attachment support
+- [x] ~~Attachment support~~ ✅ **COMPLETED!**
 - [ ] Personalization with names from CSV
 - [ ] Email scheduling
 - [ ] Outlook/Yahoo support
@@ -405,6 +489,8 @@ Want to contribute? Here are some ideas:
 - [ ] Retry failed emails automatically
 - [ ] Progress save/resume
 - [ ] Multiple recipient columns (CC, BCC)
+- [ ] Batch attachment compression
+- [ ] Cloud storage integration (Google Drive links)
 
 ## 🤝 Contributing
 

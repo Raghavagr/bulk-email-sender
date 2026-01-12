@@ -1,7 +1,8 @@
 """
-Bulk Email Sender - Simple & Secure
+Bulk Email Sender - Simple & Secure (WITH ATTACHMENT SUPPORT)
 Created for: Sending personalized emails to multiple recipients
 Author: Your AI Mentor
+Version: 2.0 - Now with attachment support!
 """
 
 import smtplib
@@ -107,34 +108,120 @@ class EmailSender:
             print(f"❌ Error reading CSV: {str(e)}")
             return None
     
-    def create_email_message(self, recipient, subject, body, sender_name=None):
+    def validate_attachments(self, attachment_paths):
         """
-        Create email message with proper formatting
+        Validate and prepare attachment files
+        
+        Args:
+            attachment_paths: List of file paths
+            
+        Returns:
+            List of valid attachment paths, or None if any file is invalid
+        """
+        if not attachment_paths:
+            return []
+        
+        valid_attachments = []
+        total_size = 0
+        max_size = 25 * 1024 * 1024  # 25MB total limit for Gmail
+        
+        print("\n📎 Validating attachments...")
+        
+        for path in attachment_paths:
+            path = path.strip().strip('"').strip("'")  # Remove quotes and whitespace
+            
+            # Check if file exists
+            if not os.path.exists(path):
+                print(f"❌ File not found: {path}")
+                return None
+            
+            # Check if it's a file (not a directory)
+            if not os.path.isfile(path):
+                print(f"❌ Not a file: {path}")
+                return None
+            
+            # Get file size
+            file_size = os.path.getsize(path)
+            total_size += file_size
+            
+            # Check individual file size (max 25MB per file)
+            if file_size > max_size:
+                size_mb = file_size / (1024 * 1024)
+                print(f"❌ File too large: {path} ({size_mb:.2f}MB)")
+                print("💡 Gmail limit: 25MB per file")
+                return None
+            
+            valid_attachments.append(path)
+            file_name = os.path.basename(path)
+            size_kb = file_size / 1024
+            print(f"   ✅ {file_name} ({size_kb:.2f}KB)")
+        
+        # Check total size
+        if total_size > max_size:
+            total_mb = total_size / (1024 * 1024)
+            print(f"\n❌ Total attachments too large: {total_mb:.2f}MB")
+            print("💡 Gmail limit: 25MB total")
+            return None
+        
+        total_mb = total_size / (1024 * 1024)
+        print(f"\n✅ All attachments valid! Total size: {total_mb:.2f}MB")
+        
+        return valid_attachments
+    
+    def create_email_message(self, recipient, subject, body, sender_name=None, attachments=None):
+        """
+        Create email message with proper formatting and attachments
         
         Args:
             recipient: Recipient email address
             subject: Email subject
             body: Email body (can include HTML)
             sender_name: Optional sender name
+            attachments: List of file paths to attach
             
         Returns:
             MIMEMultipart message object
         """
-        message = MIMEMultipart("alternative")
+        message = MIMEMultipart()
         message["Subject"] = subject
         message["From"] = f"{sender_name} <{self.sender_email}>" if sender_name else self.sender_email
         message["To"] = recipient
         
-        # Create both plain text and HTML versions
-        text_part = MIMEText(body, "plain")
-        html_part = MIMEText(body, "html")
+        # Add email body
+        body_part = MIMEText(body, "plain")
+        message.attach(body_part)
         
-        message.attach(text_part)
-        message.attach(html_part)
+        # Add attachments if provided
+        if attachments:
+            for file_path in attachments:
+                try:
+                    # Get filename
+                    filename = os.path.basename(file_path)
+                    
+                    # Open file in binary mode
+                    with open(file_path, 'rb') as attachment_file:
+                        # Create MIMEBase object
+                        part = MIMEBase('application', 'octet-stream')
+                        part.set_payload(attachment_file.read())
+                    
+                    # Encode file in ASCII characters
+                    encoders.encode_base64(part)
+                    
+                    # Add header with filename
+                    part.add_header(
+                        'Content-Disposition',
+                        f'attachment; filename= {filename}'
+                    )
+                    
+                    # Attach the file to message
+                    message.attach(part)
+                    
+                except Exception as e:
+                    print(f"⚠️  Warning: Could not attach {filename}: {str(e)}")
         
         return message
     
-    def send_bulk_emails(self, emails, subject, body, sender_name=None, delay=2):
+    def send_bulk_emails(self, emails, subject, body, sender_name=None, attachments=None, delay=2):
         """
         Send emails to multiple recipients
         
@@ -143,6 +230,7 @@ class EmailSender:
             subject: Email subject
             body: Email body
             sender_name: Optional sender name
+            attachments: List of file paths to attach
             delay: Delay between emails (seconds) to avoid spam detection
         """
         if not self.server:
@@ -154,19 +242,32 @@ class EmailSender:
         failed_count = 0
         failed_emails = []
         
-        print(f"📨 Starting to send {total_emails} emails...\n")
+        # Show attachment info
+        if attachments:
+            print(f"\n📎 Attachments to include: {len(attachments)} file(s)")
+            for att in attachments:
+                print(f"   - {os.path.basename(att)}")
+        
+        print(f"\n📨 Starting to send {total_emails} emails...\n")
         print("=" * 60)
         
         for index, recipient in enumerate(emails, 1):
             try:
                 # Create message
-                message = self.create_email_message(recipient, subject, body, sender_name)
+                message = self.create_email_message(
+                    recipient, 
+                    subject, 
+                    body, 
+                    sender_name,
+                    attachments
+                )
                 
                 # Send email
                 self.server.send_message(message)
                 sent_count += 1
                 
-                print(f"✅ [{index}/{total_emails}] Sent to: {recipient}")
+                attachment_info = f" (with {len(attachments)} attachment(s))" if attachments else ""
+                print(f"✅ [{index}/{total_emails}] Sent to: {recipient}{attachment_info}")
                 
                 # Add delay to avoid spam detection
                 if index < total_emails:  # Don't delay after last email
@@ -182,6 +283,9 @@ class EmailSender:
         print(f"\n📊 SUMMARY")
         print(f"✅ Successfully sent: {sent_count}/{total_emails}")
         print(f"❌ Failed: {failed_count}/{total_emails}")
+        
+        if attachments:
+            print(f"📎 Attachments included: {len(attachments)} file(s)")
         
         if failed_emails:
             print(f"\n⚠️  Failed email addresses:")
@@ -202,7 +306,8 @@ def print_banner():
     ║                                                           ║
     ║           📧 BULK EMAIL SENDER - SIMPLE & SECURE 📧       ║
     ║                                                           ║
-    ║               Your Personal Email Automation Tool         ║
+    ║          Your Personal Email Automation Tool v2.0         ║
+    ║                  📎 Now with Attachments! 📎              ║
     ║                                                           ║
     ╚═══════════════════════════════════════════════════════════╝
     """
@@ -226,6 +331,44 @@ def get_multiline_input(prompt):
         lines.append(line)
     
     return '\n'.join(lines)
+
+
+def get_attachments():
+    """
+    Get attachment file paths from user
+    Returns list of valid file paths or None
+    """
+    print("\n📎 ATTACHMENTS (Optional)")
+    print("-" * 60)
+    print("💡 You can attach up to 5 files (Max 25MB total)")
+    print("💡 Supported: PDF, DOCX, XLSX, images, etc.")
+    print("💡 Enter file paths separated by commas")
+    print("💡 If file is in same folder as script, just enter filename")
+    print("💡 Press Enter to skip attachments\n")
+    
+    print("Examples:")
+    print("  - Single file: resume.pdf")
+    print("  - Multiple files: resume.pdf, cover_letter.docx")
+    print("  - Full path: C:\\Users\\YourName\\Documents\\resume.pdf")
+    print("  - Mixed: resume.pdf, C:\\Documents\\portfolio.pdf\n")
+    
+    attachment_input = input("Enter attachment file path(s): ").strip()
+    
+    # If user presses Enter (no input), return empty list
+    if not attachment_input:
+        print("📧 No attachments - sending text-only email")
+        return []
+    
+    # Split by comma and clean up
+    file_paths = [path.strip() for path in attachment_input.split(',')]
+    
+    # Limit to 5 files
+    if len(file_paths) > 5:
+        print(f"\n⚠️  Warning: You entered {len(file_paths)} files. Maximum is 5.")
+        print("Using first 5 files only.")
+        file_paths = file_paths[:5]
+    
+    return file_paths
 
 
 def main():
@@ -296,8 +439,29 @@ def main():
     print()
     body = get_multiline_input("✍️  Enter email body:")
     
-    # Step 4: Send emails
-    print("\n📝 STEP 4: SENDING EMAILS")
+    # Step 4: Add attachments
+    print("\n📝 STEP 4: ADD ATTACHMENTS (OPTIONAL)")
+    print("-" * 60)
+    
+    attachment_paths = get_attachments()
+    
+    # Validate attachments if provided
+    validated_attachments = None
+    if attachment_paths:
+        validated_attachments = sender.validate_attachments(attachment_paths)
+        if validated_attachments is None:
+            print("\n❌ Attachment validation failed. Please check your files.")
+            retry = input("Continue without attachments? (yes/no): ").strip().lower()
+            if retry not in ['yes', 'y']:
+                print("\n❌ Operation cancelled.")
+                sender.disconnect()
+                return
+            validated_attachments = []
+    else:
+        validated_attachments = []
+    
+    # Step 5: Send emails
+    print("\n📝 STEP 5: SENDING EMAILS")
     print("-" * 60)
     
     # Ask for delay between emails
@@ -310,6 +474,12 @@ def main():
     print(f"   👤 From: {sender_name or email}")
     print(f"   📧 To: {len(emails)} recipients")
     print(f"   📝 Subject: {subject}")
+    if validated_attachments:
+        print(f"   📎 Attachments: {len(validated_attachments)} file(s)")
+        for att in validated_attachments:
+            print(f"      - {os.path.basename(att)}")
+    else:
+        print(f"   📎 Attachments: None")
     print(f"   ⏱️  Delay: {delay} seconds between emails")
     
     final_confirm = input("\n🚀 Start sending? (yes/no): ").strip().lower()
@@ -319,7 +489,7 @@ def main():
         return
     
     # Send emails
-    sender.send_bulk_emails(emails, subject, body, sender_name, delay)
+    sender.send_bulk_emails(emails, subject, body, sender_name, validated_attachments, delay)
     
     # Disconnect
     sender.disconnect()
